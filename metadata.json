@@ -1,0 +1,6 @@
+{
+  "name": "AI Business Consultant",
+  "description": "AI-Powered decision-support and financial analytics consultant for SMBs with predictive insights, real-time KPI dashboards, and Gemini chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
