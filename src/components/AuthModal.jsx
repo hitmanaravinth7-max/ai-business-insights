@@ -13,7 +13,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-export default function AuthModal({ onLoginSuccess }) {
+export default function AuthModal({ onLoginSuccess, onBack }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   
   // Fields
@@ -385,6 +385,18 @@ export default function AuthModal({ onLoginSuccess }) {
                 <div className="text-[10px] text-emerald-400">B2B SaaS / Tech</div>
               </button>
             </div>
+
+            {onBack && (
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                >
+                  ← Return to Executive Dashboard
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

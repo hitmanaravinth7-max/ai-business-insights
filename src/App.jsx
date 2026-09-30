@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import PredictiveInsights from './components/PredictiveInsights';
@@ -17,6 +18,9 @@ import {
 } from './data/mockData';
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Authentication State
   const [user, setUser] = useState(() => {
     try {
@@ -43,9 +47,21 @@ export default function App() {
     }
   });
 
-  // Current Dataset & Tab
+  // Current Dataset Key
   const [currentDatasetKey, setCurrentDatasetKey] = useState('Retail');
-  const [currentTab, setCurrentTab] = useState('dashboard');
+
+  // Derive Current Tab from URL path
+  const currentTab = location.pathname.startsWith('/predictive') || location.pathname.startsWith('/forecast')
+    ? 'predictive'
+    : location.pathname.startsWith('/recommendations')
+    ? 'recommendations'
+    : location.pathname.startsWith('/chat') || location.pathname.startsWith('/advisor')
+    ? 'chat'
+    : location.pathname.startsWith('/data')
+    ? 'data'
+    : location.pathname.startsWith('/login') || location.pathname.startsWith('/register')
+    ? 'login'
+    : 'dashboard';
 
   // Modals
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -122,6 +138,7 @@ export default function App() {
       localStorage.setItem('bizconsult_user', JSON.stringify(userData));
       localStorage.setItem('bizconsult_logged_in', 'true');
     } catch (e) {}
+    navigate('/dashboard');
   };
 
   // Logout Handler
@@ -130,6 +147,7 @@ export default function App() {
     try {
       localStorage.setItem('bizconsult_logged_in', 'false');
     } catch (e) {}
+    navigate('/login');
   };
 
   // Call Gemini or AI Decision Engine for Chat
@@ -270,7 +288,10 @@ Recommended priorities:
       {/* Navigation Header */}
       <Navbar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={(tab) => {
+          if (tab === 'dashboard') navigate('/dashboard');
+          else navigate(`/${tab}`);
+        }}
         profile={profile}
         onOpenProfile={() => setShowProfileModal(true)}
         onOpenReport={() => setShowReportModal(true)}
@@ -278,53 +299,103 @@ Recommended priorities:
         onLogout={handleLogout}
       />
 
-      {/* Main Container */}
+      {/* Main Container with React Router Routes */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-        {currentTab === 'dashboard' && (
-          <Dashboard
-            profile={profile}
-            metrics={metrics}
-            products={products}
-            segments={segments}
-            channels={channels}
-            onNavigate={(tab) => setCurrentTab(tab)}
-          />
-        )}
+        <Routes>
+          {/* Root and Dashboard */}
+          <Route path="/" element={
+            <Dashboard
+              profile={profile}
+              metrics={metrics}
+              products={products}
+              segments={segments}
+              channels={channels}
+              onNavigate={(tab) => navigate(`/${tab}`)}
+            />
+          } />
 
-        {currentTab === 'predictive' && (
-          <PredictiveInsights metrics={metrics} />
-        )}
+          <Route path="/dashboard" element={
+            <Dashboard
+              profile={profile}
+              metrics={metrics}
+              products={products}
+              segments={segments}
+              channels={channels}
+              onNavigate={(tab) => navigate(`/${tab}`)}
+            />
+          } />
 
-        {currentTab === 'recommendations' && (
-          <Recommendations
-            recommendations={recommendations}
-            onUpdateStatus={handleUpdateRecStatus}
-            onGenerateAiRecs={handleGenerateAiRecs}
-            isGenerating={isGeneratingRecs}
-          />
-        )}
+          {/* Predictive Insights */}
+          <Route path="/predictive" element={
+            <PredictiveInsights metrics={metrics} />
+          } />
+          <Route path="/forecast" element={
+            <PredictiveInsights metrics={metrics} />
+          } />
 
-        {currentTab === 'chat' && (
-          <AiChat
-            profile={profile}
-            metrics={metrics}
-            products={products}
-            channels={channels}
-            segments={segments}
-            messages={chatMessages}
-            onSendMessage={handleSendMessage}
-            isThinking={isChatThinking}
-          />
-        )}
+          {/* Recommendations Engine */}
+          <Route path="/recommendations" element={
+            <Recommendations
+              recommendations={recommendations}
+              onUpdateStatus={handleUpdateRecStatus}
+              onGenerateAiRecs={handleGenerateAiRecs}
+              isGenerating={isGeneratingRecs}
+            />
+          } />
 
-        {currentTab === 'data' && (
-          <DataManagement
-            metrics={metrics}
-            onAddMetric={handleAddMetric}
-            onSwitchDataset={handleSwitchDataset}
-            currentDatasetKey={currentDatasetKey}
-          />
-        )}
+          {/* AI Advisor Chat */}
+          <Route path="/chat" element={
+            <AiChat
+              profile={profile}
+              metrics={metrics}
+              products={products}
+              channels={channels}
+              segments={segments}
+              messages={chatMessages}
+              onSendMessage={handleSendMessage}
+              isThinking={isChatThinking}
+            />
+          } />
+          <Route path="/advisor" element={
+            <AiChat
+              profile={profile}
+              metrics={metrics}
+              products={products}
+              channels={channels}
+              segments={segments}
+              messages={chatMessages}
+              onSendMessage={handleSendMessage}
+              isThinking={isChatThinking}
+            />
+          } />
+
+          {/* Business Data Management */}
+          <Route path="/data" element={
+            <DataManagement
+              metrics={metrics}
+              onAddMetric={handleAddMetric}
+              onSwitchDataset={handleSwitchDataset}
+              currentDatasetKey={currentDatasetKey}
+            />
+          } />
+
+          {/* Authentication Pages */}
+          <Route path="/login" element={
+            <AuthModal
+              onLoginSuccess={handleLoginSuccess}
+              onBack={() => navigate('/dashboard')}
+            />
+          } />
+          <Route path="/register" element={
+            <AuthModal
+              onLoginSuccess={handleLoginSuccess}
+              onBack={() => navigate('/dashboard')}
+            />
+          } />
+
+          {/* Fallback unknown routes safely redirect to root application */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       {/* Modals */}
@@ -345,11 +416,6 @@ Recommended priorities:
         segments={segments}
         recommendations={recommendations}
       />
-
-      {/* Auth Screen Modal if logged out */}
-      {!isLoggedIn && (
-        <AuthModal onLoginSuccess={handleLoginSuccess} />
-      )}
 
       {/* Minimal Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
